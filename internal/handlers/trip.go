@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"net/http"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -21,10 +20,27 @@ func NewTripHandler() *TripHandler {
 	}
 }
 
+// EstimateFare estimates the fare for a trip
+func (h *TripHandler) EstimateFare(c *gin.Context) {
+	var req dto.EstimateFareRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		utils.BadRequest(c, "Invalid request data", nil)
+		return
+	}
+
+	response, err := h.tripService.EstimateFare(req)
+	if err != nil {
+		utils.BadRequest(c, err.Error(), nil)
+		return
+	}
+
+	utils.SuccessResponse(c, http.StatusOK, response, "Fare estimated successfully")
+}
+
 // CreateTrip creates a new trip
 func (h *TripHandler) CreateTrip(c *gin.Context) {
 	userIDStr, _ := c.Get("user_id")
-	userID, err := uuid.Parse(userIDStr.(string))
+	customerID, err := uuid.Parse(userIDStr.(string))
 	if err != nil {
 		utils.Unauthorized(c, "Invalid user ID")
 		return
@@ -32,29 +48,29 @@ func (h *TripHandler) CreateTrip(c *gin.Context) {
 
 	var req dto.CreateTripRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		utils.BadRequest(c, "Invalid request data", err.Error())
+		utils.BadRequest(c, "Invalid request data", nil)
 		return
 	}
 
-	trip, err := h.tripService.CreateTrip(userID, req)
+	trip, err := h.tripService.CreateTrip(customerID, req)
 	if err != nil {
-		utils.BadRequest(c, err.Error(), nil)
+		utils.InternalError(c, err.Error())
 		return
 	}
 
 	utils.SuccessResponse(c, http.StatusCreated, trip, "Trip created successfully")
 }
 
-// GetActiveTrip gets the active trip for the customer
+// GetActiveTrip gets the active trip for a customer
 func (h *TripHandler) GetActiveTrip(c *gin.Context) {
 	userIDStr, _ := c.Get("user_id")
-	userID, err := uuid.Parse(userIDStr.(string))
+	customerID, err := uuid.Parse(userIDStr.(string))
 	if err != nil {
 		utils.Unauthorized(c, "Invalid user ID")
 		return
 	}
 
-	trip, err := h.tripService.GetActiveTrip(userID)
+	trip, err := h.tripService.GetActiveTrip(customerID)
 	if err != nil {
 		utils.NotFound(c, err.Error())
 		return
@@ -63,19 +79,19 @@ func (h *TripHandler) GetActiveTrip(c *gin.Context) {
 	utils.SuccessResponse(c, http.StatusOK, trip, "Active trip retrieved successfully")
 }
 
-// GetTripHistory gets trip history for the customer
+// GetTripHistory gets the trip history for a customer
 func (h *TripHandler) GetTripHistory(c *gin.Context) {
 	userIDStr, _ := c.Get("user_id")
-	userID, err := uuid.Parse(userIDStr.(string))
+	customerID, err := uuid.Parse(userIDStr.(string))
 	if err != nil {
 		utils.Unauthorized(c, "Invalid user ID")
 		return
 	}
 
-	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "20"))
-	offset, _ := strconv.Atoi(c.DefaultQuery("offset", "0"))
+	limit := 20
+	offset := 0
 
-	trips, err := h.tripService.GetTripHistory(userID, limit, offset)
+	trips, err := h.tripService.GetTripHistory(customerID, limit, offset)
 	if err != nil {
 		utils.InternalError(c, err.Error())
 		return
@@ -111,7 +127,7 @@ func (h *TripHandler) UpdateTrip(c *gin.Context) {
 
 	var req dto.UpdateTripRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		utils.BadRequest(c, "Invalid request data", err.Error())
+		utils.BadRequest(c, "Invalid request data", nil)
 		return
 	}
 
@@ -127,7 +143,7 @@ func (h *TripHandler) UpdateTrip(c *gin.Context) {
 // CancelTrip cancels a trip
 func (h *TripHandler) CancelTrip(c *gin.Context) {
 	userIDStr, _ := c.Get("user_id")
-	userID, err := uuid.Parse(userIDStr.(string))
+	customerID, err := uuid.Parse(userIDStr.(string))
 	if err != nil {
 		utils.Unauthorized(c, "Invalid user ID")
 		return
@@ -139,11 +155,10 @@ func (h *TripHandler) CancelTrip(c *gin.Context) {
 		return
 	}
 
-	if err := h.tripService.CancelTrip(tripID, userID); err != nil {
+	if err := h.tripService.CancelTrip(tripID, customerID); err != nil {
 		utils.BadRequest(c, err.Error(), nil)
 		return
 	}
 
 	utils.SuccessResponse(c, http.StatusOK, nil, "Trip cancelled successfully")
 }
-

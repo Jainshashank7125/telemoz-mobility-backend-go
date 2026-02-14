@@ -1,6 +1,8 @@
 package repositories
 
 import (
+	"time"
+
 	"github.com/google/uuid"
 	"github.com/telemoz/backend/internal/database"
 	"github.com/telemoz/backend/internal/models"
@@ -16,6 +18,7 @@ type TripRepository interface {
 	Update(trip *models.Trip) error
 	Delete(id uuid.UUID) error
 	FindPendingTrips() ([]models.Trip, error)
+	FindSearchingBefore(time time.Time) ([]models.Trip, error)
 }
 
 type tripRepository struct {
@@ -88,3 +91,10 @@ func (r *tripRepository) FindPendingTrips() ([]models.Trip, error) {
 	return trips, err
 }
 
+// FindSearchingBefore finds all trips in searching status created before the given time
+func (r *tripRepository) FindSearchingBefore(before time.Time) ([]models.Trip, error) {
+	var trips []models.Trip
+	err := r.db.Where("status = ? AND search_started_at < ?", models.TripStatusSearching, before).
+		Find(&trips).Error
+	return trips, err
+}

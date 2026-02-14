@@ -1,8 +1,9 @@
 package dto
 
 type Location struct {
-	Latitude  float64 `json:"latitude"`
-	Longitude float64 `json:"longitude"`
+	Latitude  float64  `json:"latitude"`
+	Longitude float64  `json:"longitude"`
+	Address   string   `json:"address,omitempty"`
 	Accuracy  *float64 `json:"accuracy,omitempty"`
 	Timestamp *int64   `json:"timestamp,omitempty"`
 }
@@ -19,4 +20,3 @@ type SuccessResponse struct {
 	Data    interface{} `json:"data,omitempty"`
 	Message string      `json:"message,omitempty"`
 }
-

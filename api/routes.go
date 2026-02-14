@@ -48,6 +48,7 @@ func SetupRoutes(logger *zap.Logger) *gin.Engine {
 			trips := protected.Group("/trips")
 			trips.Use(middleware.RequireUserType("customer"))
 			{
+				trips.POST("/estimate-fare", tripHandler.EstimateFare) // Public fare estimation
 				trips.POST("", tripHandler.CreateTrip)
 				trips.GET("/active", tripHandler.GetActiveTrip)
 				trips.GET("/history", tripHandler.GetTripHistory)
@@ -112,4 +113,3 @@ func SetupRoutes(logger *zap.Logger) *gin.Engine {
 
 	return router
 }
-

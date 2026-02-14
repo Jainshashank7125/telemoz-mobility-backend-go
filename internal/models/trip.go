@@ -18,11 +18,14 @@ const (
 type TripStatus string
 
 const (
-	TripStatusPending    TripStatus = "pending"
-	TripStatusAccepted   TripStatus = "accepted"
-	TripStatusInProgress TripStatus = "in_progress"
-	TripStatusCompleted  TripStatus = "completed"
-	TripStatusCancelled  TripStatus = "cancelled"
+	TripStatusPending             TripStatus = "pending"
+	TripStatusSearching           TripStatus = "searching"
+	TripStatusAccepted            TripStatus = "accepted"
+	TripStatusInProgress          TripStatus = "in_progress"
+	TripStatusCompleted           TripStatus = "completed"
+	TripStatusCancelled           TripStatus = "cancelled"
+	TripStatusExpired             TripStatus = "expired"
+	TripStatusCancelledByCustomer TripStatus = "cancelled_by_customer"
 )
 
 type Trip struct {
@@ -30,7 +33,7 @@ type Trip struct {
 	CustomerID        uuid.UUID   `gorm:"type:uuid;not null;index" json:"customer_id"`
 	DriverID          *uuid.UUID  `gorm:"type:uuid;index" json:"driver_id,omitempty"`
 	ServiceType       ServiceType `gorm:"type:varchar(20);not null;index" json:"service_type"`
-	Status            TripStatus  `gorm:"type:varchar(20);not null;default:'pending';index" json:"status"`
+	Status            TripStatus  `gorm:"type:varchar(30);not null;default:'pending';index" json:"status"`
 	PickupLatitude    float64     `gorm:"type:decimal(10,8);not null" json:"pickup_latitude"`
 	PickupLongitude   float64     `gorm:"type:decimal(11,8);not null" json:"pickup_longitude"`
 	PickupAddress     *string     `gorm:"type:text" json:"pickup_address,omitempty"`
@@ -43,8 +46,15 @@ type Trip struct {
 	FareAmount        *float64    `gorm:"type:decimal(10,2)" json:"fare_amount,omitempty"`
 	PaymentMethod     string      `gorm:"type:varchar(20);default:'cash'" json:"payment_method"`
 	TraccarDeviceID   *string     `gorm:"type:varchar(255)" json:"traccar_device_id,omitempty"`
-	CreatedAt         time.Time   `json:"created_at"`
-	UpdatedAt         time.Time   `json:"updated_at"`
+
+	// Search tracking
+	SearchStartedAt    *time.Time `json:"search_started_at,omitempty"`
+	SearchEndedAt      *time.Time `json:"search_ended_at,omitempty"`
+	CancelledBy        *uuid.UUID `gorm:"type:uuid" json:"cancelled_by,omitempty"`
+	CancellationReason *string    `gorm:"type:text" json:"cancellation_reason,omitempty"`
+
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 
 	// Relations
 	Customer User  `gorm:"foreignKey:CustomerID" json:"customer,omitempty"`
@@ -57,4 +67,3 @@ func (t *Trip) BeforeCreate(tx *gorm.DB) error {
 	}
 	return nil
 }
-
