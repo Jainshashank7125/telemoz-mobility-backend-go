@@ -7,7 +7,9 @@ import (
 	"github.com/telemoz/backend/api"
 	"github.com/telemoz/backend/internal/config"
 	"github.com/telemoz/backend/internal/database"
+	"github.com/telemoz/backend/internal/jobs"
 	"github.com/telemoz/backend/internal/models"
+	"github.com/telemoz/backend/internal/services"
 	"go.uber.org/zap"
 )
 
@@ -50,11 +52,18 @@ func main() {
 		&models.NotificationSettings{},
 		&models.DriverEarning{},
 		&models.RefreshToken{},
+		&models.DriverAvailability{},
 	); err != nil {
 		logger.Fatal("Failed to run migrations", zap.Error(err))
 	}
 
 	logger.Info("Database migrations completed")
+
+	// Initialize trip service for background jobs
+	tripService := services.NewTripService()
+
+	// Start background job for expiring trips
+	jobs.StartTripExpirationJob(tripService)
 
 	// Setup routes
 	router := api.SetupRoutes(logger)
@@ -66,4 +75,3 @@ func main() {
 		logger.Fatal("Failed to start server", zap.Error(err))
 	}
 }
-
